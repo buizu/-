@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>モバレ プランナー</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #000;
+      user-select: none;
+    }
+
+    .map-container {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 80vw;
+      max-width: 1000px;
+      cursor: default;
+      touch-action: manipulation;
+      z-index: 1;
+    }
+
+    .map-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      pointer-events: none;
+    }
+
+    .circle {
+      position: absolute;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      width: 4%;
+      min-width: 10px;
+      border: 2px solid white;
+      box-sizing: border-box;
+      user-select: none;
+      z-index: 49;
+    }
+    .green { background-color: green; }
+    .red { background-color: red; }
+    .blue { background-color: blue; }
+    .yellow { background-color: yellow; }
+    .cyan { background-color: cyan; }
+    .purple {
+      background-color: purple;
+      width: 5%;
+      min-width: 14px;
+      border: 2px solid white;
+      box-sizing: border-box;
+    }
+
+    .role-circle {
+      user-select: none;
+      color: white;
+      font-weight: bold;
+      font-size: 0.8em;
+      border: 2px solid;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: default;
+      width: clamp(50px,7vw,80px);
+      aspect-ratio: 1 / 1;
+      font-size: clamp(18px, 15vw, 30px);
+      z-index: 50;
+    }
+
+    .red-border {
+      background-color: #ff4500;
+    }
+    .blue-border {
+      background-color: #4169e1;
+    }
+
+    .button-container {
+      position: fixed;
+      left: 10px;
+      top: 24%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+    }
+    .icon-button {
+      width: 90px;
+      height: 90px;
+      background-color: transparent;
+      border: 5px solid white;
+      cursor: pointer;
+      padding: 0;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .icon-button.active {
+      border: 5px solid limegreen;
+    }
+    .icon-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    #paint-canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+        z-index: 100;
+    }
+    .paint-mode {
+      cursor: crosshair !important;
+    }
+    .color-palette {
+      position: fixed;
+      left: 150px;
+      top: 10px;
+      display: none;
+      flex-direction: row;
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px 12px;
+      border-radius: 10px;
+      z-index: 999;
+    }
+
+    .color-button {
+      width: 40px;
+      height: 40px;
+      border: 3px solid white;
+      cursor: pointer;
+      outline: none;
+      padding: 0;
+    }
+    .color-button.active {
+      border: 5px solid gold;
+    }
+
+    #eraser-cursor {
+      position: fixed;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background-color: gray;
+      pointer-events: none;
+      z-index: 1000;
+      display: none;
+      transform: translate(-50%, -50%);
+    }
+
+    .dialog-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+    .dialog-box {
+      background: white;
+      color: black;
+      padding: 30px;
+      border-radius: 12px;
+      width: 90vw;
+      text-align: center;
+      min-width: unset;
+      max-width: 600px;
+      font-size: 1.2em;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    }
+    .dialog-buttons {
+      margin-top: 15px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+    .dialog-buttons button {
+      padding: 10px 20px;
+      font-size: 1em;
+    }
+    input[type="checkbox"] {
+      width: 24px;
+      height: 24px;
+      transform: scale(1.5); /* 倍率で拡大 */
+      margin-right: 8px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+
+      .button-container {
+        top: 100;
+        gap: 8px;
+      }
+      .icon-button {
+        width: 40px;
+        height: 40px;
+      }
+      .icon-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .color-button {
+        width: 30px;
+        height: 30px;
+      }
+
+      .dialog-box {
+        width: 80vw;            /* スマホ画面に優しく広げる */
+      font-size: 0.9em;       /* 少し読みやすく */
+      padding: 16px 20px;     /* 上下左右の余白を調整 */
+      box-sizing: border-box;
+      }
+      .dialog-buttons button {
+        padding: 5px 10px;
+        font-size: 1em;
+      }
+
+      input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+        transform: none;
+        margin-right: 6px;
+      }
+      
+      .role-circle {
+        font-size: clamp(12px, 2vw, 18px);
+        width: clamp(25px, 6vw, 45px);
+      }
+
+    }
+
+
+
+
+  </style>
+</head>
+
+<body>
+
+    <div class="button-container" title="ドラッグモード">
+      
+      <!-- ドラッグボタン -->
+      <button class="icon-button">
+          <img src="/hand.jpg" alt="ドラッグアイコン" class="icon-image">
+      </button>
+
+      <!-- ペイントボタン -->
+      <button class="icon-button" title="ペイントモード">
+        <img src="/pen.jpg" alt="ペイントアイコン" class="icon-image">
+      </button>
+
+      <!-- 消しゴムボタン -->
+      <button class="icon-button" title="消しゴムモード">
+        <img src="/eraser.jpg" alt="消しゴムアイコン" class="icon-image">
+      </button>
+
+      <!-- リセットボタン -->
+      <button class="icon-button" id="reset-button" title="リセット">
+        <img src="/reset.jpg" alt="リセットアイコン" class="icon-image">
+      </button>
+
+    </div>
+
+    <div class="color-palette" title="色を選択">
+      <button class="color-button" data-color="white" style="background-color: white;"></button>
+      <button class="color-button" data-color="lime" style="background-color: lime;"></button>
+      <button class="color-button" data-color="magenta" style="background-color: magenta;"></button>
+      <button class="color-button" data-color="red" style="background-color: red;"></button>
+      <button class="color-button" data-color="blue" style="background-color: blue;"></button>
+    </div>
+
+    <div class="map-container">
+    <img src="mbrmap.jpg" alt="MBRマップ" class="map-image" draggable="false">
+    <canvas id="paint-canvas"></canvas>
+    </div>
+
+    <div id="eraser-cursor"></div>
+
+    <div id="custom-dialog" style="display: none;" class="dialog-overlay">
+      <div class="dialog-box">
+        <p>初期状態に戻しますか？</p>
+        <label><input type="checkbox" id="skip-confirm"> 今後このダイアログを表示しない</label>
+        <div class="dialog-buttons">
+          <button id="dialog-yes">はい</button>
+          <button id="dialog-no">いいえ</button>
+        </div>
+      </div>
+    </div>
+  
+
+  <script>
+    const container = document.querySelector('.map-container');
+    const buttons = document.querySelectorAll('.icon-button');
+    const dragButton = buttons[0];
+    const paintButton = buttons[1];
+    const roleCircles = [];
+    let currentMode = null;
+    let isDraggable = false;
+    // ページ読み込み時に、リセット確認を毎回表示するように初期化
+    window.addEventListener('DOMContentLoaded', () => {
+      localStorage.removeItem('skipResetConfirm');
+    });
+
+  
+    const redRoleData = [
+      { label: 'E', x: 18, y: 10 },
+      { label: 'R', x: 67, y: 53 },
+      { label: 'J', x: 73, y: 42 },
+      { label: 'M', x: 55, y: 45 },
+      { label: 'G', x: 92, y: 80 }
+    ];
+  
+    const blueRoleData = [
+      { label: 'E', x: 8, y: 20 },
+      { label: 'R', x: 33, y: 47 },
+      { label: 'J', x: 27, y: 58 },
+      { label: 'M', x: 45, y: 55 },
+      { label: 'G', x: 82, y: 90 }
+    ];
+  
+    function createRoleCircle(data, borderClass) {
+      const role = document.createElement('div');
+      role.classList.add('circle', 'role-circle', borderClass);
+      role.textContent = data.label;
+      role.style.left = `${data.x}%`;
+      role.style.top = `${data.y}%`;
+
+      // 初期位置を記録
+      role.dataset.initialLeft = data.x;
+      role.dataset.initialTop = data.y;
+
+      container.appendChild(role);
+      roleCircles.push(role);
+      makeDraggable(role); // 初期化時にドラッグ機能もセット
+    }
+  
+    redRoleData.forEach(data => createRoleCircle(data, 'red-border'));
+    blueRoleData.forEach(data => createRoleCircle(data, 'blue-border'));
+  
+        const circleData = [
+      // 緑6個
+      { x: 38.5, y: 18, color: 'green' },
+      { x: 61.5, y: 82, color: 'green' },
+      { x: 19, y: 44, color: 'green' },
+      { x: 81, y: 56, color: 'green' },
+      { x: 50, y: 28, color: 'green' },
+      { x: 50, y: 72, color: 'green' },
+
+      // 赤2個
+      { x: 54, y: 21, color: 'red' },
+      { x: 46, y: 79, color: 'red' },
+
+      // 青2個
+      { x: 74, y: 47, color: 'blue' },
+      { x: 26, y: 53, color: 'blue' },
+
+      // 黄色2個
+      { x: 19, y: 26, color: 'yellow' },
+      { x: 81, y: 74, color: 'yellow' },
+
+      // 水色2個
+      { x: 40, y: 40, color: 'cyan' },
+      { x: 60, y: 60, color: 'cyan' },
+
+      // 紫色2個
+      { x: 32, y: 31, color: 'purple',},
+      { x: 68.7, y: 69, color: 'purple',},
+
+    ];
+
+    circleData.forEach(data => {
+      const circle = document.createElement('div');
+      circle.classList.add('circle', data.color);
+      circle.style.left = `${data.x}%`;
+      circle.style.top = `${data.y}%`;
+
+      // 紫色の円だけ特別なサイズを設定
+      if (data.color === 'purple') {
+        circle.style.width = '5.5%';  // サイズを6%に設定
+        circle.style.height = '5.5%';
+        circle.style.minWidth = '14px';  // 最小サイズを確保
+      }
+
+      container.appendChild(circle);
+    });
+    
+    function makeDraggable(roleElement) {
+      let isDragging = false;
+      let offsetX = 0, offsetY = 0;
+  
+      roleElement.addEventListener('mousedown', (e) => {
+        if (!isDraggable) return;
+        isDragging = true;
+  
+        const roleRect = roleElement.getBoundingClientRect();
+        offsetX = e.clientX - (roleRect.left + roleRect.width / 2);
+        offsetY = e.clientY - (roleRect.top + roleRect.height / 2);
+  
+        roleElement.style.zIndex = 1000;
+        roleElement.style.cursor = 'grabbing';
+      });
+  
+      document.addEventListener('mousemove', (e) => {
+        if (isDragging && isDraggable) {
+          const rect = container.getBoundingClientRect();
+          const relativeX = e.clientX - rect.left - offsetX;
+          const relativeY = e.clientY - rect.top - offsetY;
+  
+          const newLeftPercent = (relativeX / rect.width) * 100;
+          const newTopPercent = (relativeY / rect.height) * 100;
+  
+          roleElement.style.left = `${newLeftPercent}%`;
+          roleElement.style.top = `${newTopPercent}%`;
+        }
+      });
+  
+      document.addEventListener('mouseup', () => {
+        isDragging = false;
+        roleCircles.forEach(role => {
+          roleElement.style.zIndex = '';
+          role.style.cursor = isDraggable ? 'grab' : 'default';  // 掴み解除時に戻す
+        });
+      });
+    
+    
+        // タッチ開始
+      roleElement.addEventListener('touchstart', (e) => {
+        if (!isDraggable) return;
+        isDragging = true;
+        e.preventDefault();
+
+        const touch = e.touches[0];
+        const roleRect = roleElement.getBoundingClientRect();
+        offsetX = touch.clientX - (roleRect.left + roleRect.width / 2);
+        offsetY = touch.clientY - (roleRect.top + roleRect.height / 2);
+
+        roleElement.style.zIndex = 1000;
+        roleElement.style.cursor = 'grabbing';
+      }, { passive: false });
+
+      // タッチ移動
+      document.addEventListener('touchmove', (e) => {
+        if (eraseMode) {
+          const touch = e.touches[0];
+          eraserCursor.style.display = 'block';
+          eraserCursor.style.left = `${touch.clientX}px`;
+          eraserCursor.style.top = `${touch.clientY}px`;
+        }
+
+        if (!isDragging || !isDraggable) return;
+        e.preventDefault();
+
+        const touch = e.touches[0];
+        const rect = container.getBoundingClientRect();
+        const relativeX = touch.clientX - rect.left - offsetX;
+        const relativeY = touch.clientY - rect.top - offsetY;
+
+        const newLeftPercent = (relativeX / rect.width) * 100;
+        const newTopPercent = (relativeY / rect.height) * 100;
+
+        roleElement.style.left = `${newLeftPercent}%`;
+        roleElement.style.top = `${newTopPercent}%`;
+      }, { passive: false });
+
+      // タッチ終了
+      document.addEventListener('touchend', () => {
+        if (eraseMode) {
+          eraserCursor.style.display = 'none';
+        }
+
+        isDragging = false;
+        roleElement.style.zIndex = '';
+        roleElement.style.cursor = isDraggable ? 'grab' : 'default';
+      });
+
+    }
+  
+    // ドラッグモードの切り替え
+    dragButton.addEventListener('click', () => {
+      setMode(currentMode === 'drag' ? null : 'drag');
+    });
+
+    function setMode(modeName) {
+      currentMode = modeName;
+
+      // すべてのモードをOFFに
+      isDraggable = false;
+      paintMode = false;
+      eraseMode = false;
+
+      dragButton.classList.remove('active');
+      paintButton.classList.remove('active');
+      eraserButton.classList.remove('active');
+
+      paintCanvas.style.pointerEvents = 'none';
+      paintCanvas.classList.remove('paint-mode');
+      colorPalette.style.display = 'none';
+      paintCanvas.style.cursor = ''; // カーソルを元に戻す
+
+      roleCircles.forEach(role => role.style.cursor = 'default');
+
+      // 指定モードをONに
+      switch (modeName) {
+        case 'drag':
+          isDraggable = true;
+          dragButton.classList.add('active');
+          roleCircles.forEach(role => role.style.cursor = 'grab');
+          break;
+
+        case 'paint':
+          paintMode = true;
+          paintButton.classList.add('active');
+          paintCanvas.style.pointerEvents = 'auto';
+          paintCanvas.classList.add('paint-mode');
+         colorPalette.style.display = 'flex'; // ← カラーパレット表示
+          break;
+
+        case 'erase':
+            eraseMode = true;
+            eraserButton.classList.add('active');
+            paintCanvas.style.pointerEvents = 'auto';
+            paintCanvas.style.cursor = 'none'; // 消しゴムモードでは標準カーソル非表示
+            colorPalette.style.display = 'none'; // 消しゴムは色不要
+          break;
+
+      }
+    }
+
+    const eraserCursor = document.getElementById('eraser-cursor');
+
+    // マウス移動時にカーソルを追従させる
+    document.addEventListener('mousemove', (e) => {
+      if (eraseMode) {
+        eraserCursor.style.display = 'block';
+        eraserCursor.style.left = `${e.clientX}px`;
+        eraserCursor.style.top = `${e.clientY}px`;
+      } else {
+        eraserCursor.style.display = 'none';
+      }
+    });
+
+    // カーソルのスタイルを切り替える
+    roleCircles.forEach(role => {
+        role.style.cursor = isDraggable ? 'pointer' : 'default';
+    });
+
+    const paintCanvas = document.getElementById('paint-canvas');
+    const ctx = paintCanvas.getContext('2d');
+    const lines = [];
+    let currentLine = null;
+    let isPainting = false;
+    let paintMode = false;
+    let eraseMode = false;
+    let currentColor = 'white'; // 初期色
+
+    // キャンバスのサイズ調整
+    function resizeCanvas() {
+      const rect = container.getBoundingClientRect();
+      paintCanvas.width = rect.width;
+      paintCanvas.height = rect.height;
+      paintCanvas.style.left = '0';
+      paintCanvas.style.top = '0';
+      paintCanvas.style.position = 'absolute';
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // ペイントモードの切り替え
+    paintButton.addEventListener('click', () => {
+      setMode(currentMode === 'paint' ? null : 'paint');
+    });
+
+    const colorButtons = document.querySelectorAll('.color-button');
+      colorButtons.forEach(button => {
+      button.addEventListener('click', () => {
+    // 選択色の更新
+    currentColor = button.dataset.color;
+
+    // 見た目も更新（アクティブ枠）
+    colorButtons.forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+  });
+});
+
+    // 初期選択状態を設定
+    colorButtons[0].classList.add('active');
+
+    // ペイント動作
+    paintCanvas.addEventListener('mousedown', (e) => {
+  if (!paintMode) return;
+  isPainting = true;
+
+  const x = e.offsetX;
+  const y = e.offsetY;
+
+  currentLine = {
+    color: currentColor,
+    points: [{ x, y }]
+  };
+});
+
+    paintCanvas.addEventListener('mousemove', (e) => {
+  if (!isPainting || !paintMode) return;
+
+  const x = e.offsetX;
+  const y = e.offsetY;
+
+  currentLine.points.push({ x, y });
+  redrawLines(); // 毎回全線を再描画
+});
+
+    paintCanvas.addEventListener('mouseup', () => {
+  if (!paintMode || !isPainting) return;
+  isPainting = false;
+
+  if (currentLine && currentLine.points.length > 1) {
+    lines.push(currentLine);
+  }
+  currentLine = null;
+});
+
+    paintCanvas.addEventListener('click', (e) => {
+  if (!eraseMode) return;
+
+  const x = e.offsetX;
+  const y = e.offsetY;
+
+  // 線を逆順で走査（上にある線ほど優先的に削除）
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+
+    for (let j = 0; j < line.points.length - 1; j++) {
+      const p1 = line.points[j];
+      const p2 = line.points[j + 1];
+      const distance = pointToSegmentDistance({ x, y }, p1, p2);
+
+      const eraserRadius = eraserCursor.offsetWidth / 2;
+
+      if (distance < eraserRadius) {
+        lines.splice(i, 1);
+        redrawLines();
+        return;
+      }
+    }
+  }
+});
+
+// 線分と点との距離を計算
+    function pointToSegmentDistance(p, a, b) {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const l2 = dx * dx + dy * dy;
+
+  if (l2 === 0) return Math.hypot(p.x - a.x, p.y - a.y);
+
+  const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2));
+  const projX = a.x + t * dx;
+  const projY = a.y + t * dy;
+
+  return Math.hypot(p.x - projX, p.y - projY);
+}
+
+    function redrawLines() {
+  ctx.clearRect(0, 0, paintCanvas.width, paintCanvas.height);
+
+  [...lines, currentLine].forEach(line => {
+    if (!line) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = line.color;
+    ctx.lineWidth = 3;
+
+    const [start, ...rest] = line.points;
+    ctx.moveTo(start.x, start.y);
+    rest.forEach(p => ctx.lineTo(p.x, p.y));
+
+    ctx.stroke();
+    ctx.closePath();
+  });
+}
+
+    const colorPalette = document.querySelector('.color-palette'); // ← 上で移動した要素を取得
+
+    // 描画開始時の処理修正
+    paintCanvas.addEventListener('mousedown', (e) => {
+      if (!paintMode) return;
+      isPainting = true;
+      const rect = paintCanvas.getBoundingClientRect();
+      ctx.beginPath();
+      ctx.moveTo(e.offsetX, e.offsetY); // moveToをbeginPath後に修正
+    });
+
+    function getCanvasPos(e) {
+      if (e.touches) {
+        const touch = e.touches[0];
+        const rect = paintCanvas.getBoundingClientRect();
+        return {
+          x: touch.clientX - rect.left,
+          y: touch.clientY - rect.top
+        };
+      } else {
+        return {
+          x: e.offsetX,
+          y: e.offsetY
+        };
+      }
+    }
+
+    paintCanvas.addEventListener('touchstart', (e) => {
+      if (!paintMode) return;
+      e.preventDefault();
+      isPainting = true;
+      const { x, y } = getCanvasPos(e);
+      currentLine = {
+        color: currentColor,
+        points: [{ x, y }]
+      };
+    }, { passive: false });
+
+    paintCanvas.addEventListener('touchmove', (e) => {
+      if (!isPainting || !paintMode) return;
+      e.preventDefault();
+      const { x, y } = getCanvasPos(e);
+      currentLine.points.push({ x, y });
+      redrawLines();
+    }, { passive: false });
+
+    paintCanvas.addEventListener('touchend', (e) => {
+      if (eraseMode) {
+        eraserCursor.style.display = 'none';
+      }
+
+      if (!paintMode || !isPainting) return;
+      isPainting = false;
+      if (currentLine && currentLine.points.length > 1) {
+        lines.push(currentLine);
+      }
+      currentLine = null;
+    }, { passive: false });
+
+    // 消しゴムモードの切り替え
+    const eraserButton = buttons[2];
+    eraserButton.addEventListener('click', () => {
+      setMode(currentMode === 'erase' ? null : 'erase');
+    });
+
+    // リセットボタンの切り替え
+    const resetButton = document.getElementById('reset-button');
+    const dialog = document.getElementById('custom-dialog');
+    const dialogYes = document.getElementById('dialog-yes');
+    const dialogNo = document.getElementById('dialog-no');
+    const skipCheckbox = document.getElementById('skip-confirm');
+
+    resetButton.addEventListener('click', () => {
+      if (localStorage.getItem('skipResetConfirm') === 'true') {
+        doReset();
+        return;
+      }
+
+      dialog.style.display = 'flex';
+    });
+
+    dialogYes.addEventListener('click', () => {
+      if (skipCheckbox.checked) {
+        localStorage.setItem('skipResetConfirm', 'true');
+      }
+
+      dialog.style.display = 'none';
+      doReset();
+    });
+
+    dialogNo.addEventListener('click', () => {
+      dialog.style.display = 'none';
+    });
+
+    function doReset() {
+      // 描画を消す
+      lines.length = 0;
+      currentLine = null;
+      redrawLines();
+
+      // ロール位置を初期位置に戻す
+      roleCircles.forEach(role => {
+        role.style.left = `${role.dataset.initialLeft}%`;
+        role.style.top = `${role.dataset.initialTop}%`;
+      });
+
+      // モードも初期化
+      setMode(null);
+    }
+
+
+  </script>
+
+</body>
+</html>

@@ -44,8 +44,8 @@
 
 ## 🌐 公開URL（GitHub Pages）
 
-[https://ユーザー名.github.io/mbr-planner/mbrplan.html]  
-(https://ユーザー名.github.io/リポジトリ名/mbrplan.html)
+こちらをクリックすると、プランナーのページに飛べます。  
+(https://ユーザー名.github.io/mbr-planner/mbrplan.html)
 
 
 ---

@@ -31,20 +31,20 @@
 ## 📁 ファイル構成
 
 .
-├── mbrplan.html ← メインHTML
-├── images/
-│ ├── mbrmap.jpg ← 背景マップ
-│ ├── hand.jpg ← ドラッグアイコン
-│ ├── pen.jpg ← ペイントアイコン
-│ ├── eraser.jpg ← 消しゴムアイコン
-│ └── reset.jpg ← リセットアイコン
-└── README.md ← このファイル
+├── mbrplan.html ← メインHTML　　
+├── images/　　
+│ ├── mbrmap.jpg ← 背景マップ　　
+│ ├── hand.jpg ← ドラッグアイコン　　
+│ ├── pen.jpg ← ペイントアイコン　　
+│ ├── eraser.jpg ← 消しゴムアイコン　　
+│ └── reset.jpg ← リセットアイコン　　
+└── README.md ← このファイル　　
 
 ---
 
 ## 🌐 公開URL（GitHub Pages）
 
-[https://ユーザー名.github.io/mbr-planner/mbrplan.html]
+[https://ユーザー名.github.io/mbr-planner/mbrplan.html]　　
 (https://ユーザー名.github.io/リポジトリ名/mbrplan.html)
 
 
